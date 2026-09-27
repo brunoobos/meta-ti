@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meta TI - Admin</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+        --bg: #0d1117; --surface: #161b22; --border: #30363d;
+        --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+        --success: #3fb950; --danger: #f85149; --warning: #d29922;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg);
+        color: var(--text); line-height: 1.6; min-height: 100vh; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: 1.6rem; margin-bottom: .5rem; }
+    h1::before { content: "🔐 "; }
+    h2 { font-size: 1.15rem; margin: 2rem 0 1rem; color: var(--accent);
+        border-bottom: 1px solid var(--border); padding-bottom: .5rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: .9rem; }
+    label { display: block; font-size: .85rem; color: var(--muted); margin: .8rem 0 .35rem; }
+    input, textarea, select { width: 100%; padding: .7rem .9rem; background: var(--surface);
+        border: 1px solid var(--border); border-radius: 6px; color: var(--text);
+        font-size: .95rem; font-family: inherit; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+    .btn { padding: .6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer;
+        font-weight: 600; font-size: .85rem; font-family: inherit; }
+    .btn.primary { background: var(--accent); color: var(--bg); }
+    .btn.success { background: var(--success); color: var(--bg); }
+    .btn.danger { background: var(--danger); color: white; }
+    .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .tabs { display: flex; gap: .5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border);
+        padding-bottom: .5rem; flex-wrap: wrap; }
+    .tab { padding: .5rem 1rem; background: transparent; border: none; color: var(--muted);
+        cursor: pointer; font-weight: 600; border-radius: 6px 6px 0 0; font-family: inherit; }
+    .tab.active { color: var(--accent); background: var(--surface); }
+    .section { display: none; }
+    .section.active { display: block; }
+    .row { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .list-item { display: flex; justify-content: space-between; align-items: center;
+        padding: .7rem 1rem; background: var(--surface); border: 1px solid var(--border);
+        border-radius: 6px; margin-bottom: .5rem; gap: .5rem; }
+    .list-item .name { flex: 1; font-weight: 500; }
+    .list-item .actions { display: flex; gap: .4rem; }
+    .list-item .actions button { padding: .35rem .7rem; font-size: .75rem;
+        border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
+    .list-item .actions .edit { background: var(--accent); color: var(--bg); }
+    .list-item .actions .del { background: var(--danger); color: white; }
+    .badge { background: var(--accent); color: var(--bg); padding: .2rem .6rem;
+        border-radius: 4px; font-size: .7rem; font-weight: 700; }
+    .login-box { max-width: 400px; margin: 6rem auto; background: var(--surface);
+        padding: 2rem; border-radius: 12px; border: 1px solid var(--border); }
+    .login-box h1 { margin-bottom: 1.5rem; }
+    .perm-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: .5rem; margin-top: .8rem; }
+    .perm-item { display: flex; align-items: center; gap: .5rem; padding: .5rem .8rem;
+        background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+        font-size: .85rem; }
+    .perm-item input { width: auto; }
+    .muted { color: var(--muted); font-size: .85rem; margin-top: .5rem; }
+    .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox" class="login-box">
+    <h1>Meta TI Admin</h1>
+    <label>Senha de administrador</label>
+    <input type="password" id="adminPass" placeholder="Senha">
+    <div class="row">
+        <button class="btn primary" id="btnLogin">Entrar</button>
+    </div>
+</div>
+
+<!-- PAINEL -->
+<div id="panel" class="container hidden">
+    <h1>Meta TI - Administrador</h1>
+    <p class="subtitle">Gerencie concursos, disciplinas, tópicos e usuários.</p>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="concursos">Concursos</button>
+        <button class="tab" data-tab="disciplinas">Disciplinas</button>
+        <button class="tab" data-tab="topicos">Tópicos</button>
+        <button class="tab" data-tab="usuarios">Usuários & Permissões</button>
+        <button class="tab" id="btnLogout" style="margin-left:auto; color:#f85149">Sair</button>
+    </div>
+
+    <!-- CONCURSOS -->
+    <div class="section active" data-section="concursos">
+        <h2>Adicionar / Editar concurso</h2>
+        <label>ID (único, sem espaços)</label>
+        <input type="text" id="cId" placeholder="ex: pf">
+        <label>Nome</label>
+        <input type="text" id="cNome" placeholder="ex: Polícia Federal - Agente (TI)">
+        <label>Descrição</label>
+        <input type="text" id="cDesc" placeholder="ex: Edital PF Agente - área de TI">
+        <div class="row">
+            <button class="btn primary" id="cSave">Salvar</button>
+            <button class="btn ghost" id="cClear">Limpar</button>
+        </div>
+        <h2>Concursos existentes</h2>
+        <div id="cList"></div>
+    </div>
+
+    <!-- DISCIPLINAS -->
+    <div class="section" data-section="disciplinas">
+        <h2>Adicionar / Editar disciplina</h2>
+        <label>Concurso</label>
+        <select id="dConcurso"></select>
+        <label>Nome da disciplina</label>
+        <input type="text" id="dNome" placeholder="ex: BANCO DE DADOS">
+        <div class="row">
+            <button class="btn primary" id="dSave">Salvar</button>
+            <button class="btn ghost" id="dClear">Limpar</button>
+        </div>
+        <h2>Disciplinas do concurso selecionado</h2>
+        <div id="dList"></div>
+    </div>
+
+    <!-- TÓPICOS -->
+    <div class="section" data-section="topicos">
+        <h2>Adicionar / Editar tópico</h2>
+        <label>Concurso</label>
+        <select id="tConcurso"></select>
+        <label>Disciplina</label>
+        <select id="tDisciplina"></select>
+        <label>Texto do tópico</label>
+        <textarea id="tTexto" rows="3"></textarea>
+        <div class="row">
+            <button class="btn primary" id="tSave">Salvar</button>
+            <button class="btn ghost" id="tClear">Limpar</button>
+        </div>
+        <h2>Tópicos da disciplina selecionada</h2>
+        <div id="tList"></div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="section" data-section="usuarios">
+        <h2>Usuários cadastrados</h2>
+        <p class="muted">Marque quais concursos cada usuário pode ver. Clique em "Salvar permissões" após marcar.</p>
+        <div id="uList"></div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const API = "";
+    let ADMIN_PASS = sessionStorage.getItem("metati_admin_pass") || null;
+    let concursosCache = [];
+    let editingDisciplinaId = null;
+    let editingTopicoId = null;
+
+    const $ = id => document.getElementById(id);
+
+    async function api(path, options = {}){
+        const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+        if(ADMIN_PASS) headers["x-admin-password"] = ADMIN_PASS;
+        const res = await fetch(API + path, { ...options, headers });
+        if(!res.ok){
+            const err = await res.json().catch(() => ({ error: "Erro de rede" }));
+            throw new Error(err.error || "Erro na API");
+        }
+        return res.json();
+    }
+
+    /* LOGIN */
+    async function tryLogin(){
+        const pass = $("adminPass").value;
+        try {
+            const r = await fetch("/api/admin/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: pass })
+            });
+            if(!r.ok) throw new Error("Senha incorreta");
+            ADMIN_PASS = pass;
+            sessionStorage.setItem("metati_admin_pass", pass);
+            showPanel();
+        } catch(e){ alert(e.message); }
+    }
+    $("btnLogin").onclick = tryLogin;
+    $("adminPass").addEventListener("keydown", e => { if(e.key === "Enter") tryLogin(); });
+
+    function showPanel(){
+        $("loginBox").classList.add("hidden");
+        $("panel").classList.remove("hidden");
+        loadConcursos();
+        populateSelects();
+    }
+
+    if(ADMIN_PASS) showPanel();
+
+    /* TABS */
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.onclick = () => {
+            if(tab.id === "btnLogout"){
+                ADMIN_PASS = null;
+                sessionStorage.removeItem("metati_admin_pass");
+                location.reload();
+                return;
+            }
+            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+            document.querySelector(`.section[data-section="${tab.dataset.tab}"]`).classList.add("active");
+        };
+    });
+
+    /* CONCURSOS */
+    async function loadConcursos(){
+        concursosCache = await api("/api/admin/concursos");
+        renderConcursos();
+        populateSelects();
+    }
+
+    function renderConcursos(){
+        const list = $("cList");
+        list.innerHTML = "";
+        concursosCache.forEach(c => {
+            const div = document.createElement("div");
+            div.className = "list-item";
+            div.innerHTML = `<span class="name">${c.nome} <span class="badge">${c.id}</span></span>
+                <span class="actions">
+                    <button class="edit">Editar</button>
+                    <button class="del">Excluir</button>
+                </span>`;
+            div.querySelector(".edit").onclick = () => {
+                $("cId").value = c.id; $("cId").disabled = true;
+                $("cNome").value = c.nome; $("cDesc").value = c.descricao || "";
+            };
+            div.querySelector(".del").onclick = async () => {
+                if(!confirm(`Excluir "${c.nome}"?`)) return;
+                await api("/api/admin/concursos/" + c.id, { method: "DELETE" });
+                await loadConcursos();
+            };
+            list.appendChild(div);
+        });
+    }
+
+    $("cSave").onclick = async () => {
+        const id = $("cId").value.trim().toLowerCase().replace(/\s+/g, "-");
+        const nome = $("cNome").value.trim();
+        const descricao = $("cDesc").value.trim();
+        if(!id || !nome){ alert("Preencha ID e Nome."); return; }
+        try {
+            const existente = concursosCache.find(c => c.id === id);
+            if(existente){
+                await api("/api/admin/concursos/" + id, { method: "PUT",
+                    body: JSON.stringify({ nome, descricao }) });
+            } else {
+                await api("/api/admin/concursos", { method: "POST",
+                    body: JSON.stringify({ id, nome, descricao }) });
+            }
+            $("cId").value = ""; $("cNome").value = ""; $("cDesc").value = "";
+            $("cId").disabled = false;
+            await loadConcursos();
+        } catch(e){ alert(e.message); }
+    };
+    $("cClear").onclick = () => {
+        $("cId").value = ""; $("cNome").value = ""; $("cDesc").value = "";
+        $("cId").disabled = false;
+    };
+
+    /* DISCIPLINAS */
+    async function populateSelects(){
+        // dConcurso
+        const dc = $("dConcurso");
+        dc.innerHTML = "";
+        concursosCache.forEach(c => {
+            const o = document.createElement("option");
+            o.value = c.id; o.textContent = c.nome;
+            dc.appendChild(o);
+        });
+
+        // tConcurso
+        const tc = $("tConcurso");
+        tc.innerHTML = "";
+        concursosCache.forEach(c => {
+            const o = document.createElement("option");
+            o.value = c.id; o.textContent = c.nome;
+            tc.appendChild(o);
+        });
+
+        // tDisciplina (carrega do primeiro concurso)
+        if(concursosCache.length){
+            await loadDisciplinasForTopicos(concursosCache[0].id);
+        }
+
+        dc.onchange = () => loadDisciplinasForList(dc.value);
+        tc.onchange = () => loadDisciplinasForTopicos(tc.value);
+
+        if(concursosCache.length){
+            await loadDisciplinasForList(concursosCache[0].id);
+        }
+    }
+
+    async function loadDisciplinasForList(concursoId){
+        const c = await api("/api/admin/concursos/" + concursoId);
+        const list = $("dList");
+        list.innerHTML = "";
+        c.disciplinas.forEach(d => {
+            const div = document.createElement("div");
+            div.className = "list-item";
+            div.innerHTML = `<span class="name">${d.nome}</span>
+                <span class="actions">
+                    <button class="edit">Editar</button>
+                    <button class="del">Excluir</button>
+                </span>`;
+            div.querySelector(".edit").onclick = () => {
+                editingDisciplinaId = d.id;
+                $("dNome").value = d.nome;
+                $("dConcurso").value = concursoId;
+                document.querySelector('.tab[data-tab="disciplinas"]').click();
+            };
+            div.querySelector(".del").onclick = async () => {
+                if(!confirm(`Excluir "${d.nome}"?`)) return;
+                await api("/api/admin/disciplinas/" + d.id, { method: "DELETE" });
+                await loadDisciplinasForList(concursoId);
+            };
+            list.appendChild(div);
+        });
+    }
+
+    async function loadDisciplinasForTopicos(concursoId){
+        const c = await api("/api/admin/concursos/" + concursoId);
+        const td = $("tDisciplina");
+        td.innerHTML = "";
+        c.disciplinas.forEach(d => {
+            const o = document.createElement("option");
+            o.value = d.id; o.textContent = d.nome;
+            td.appendChild(o);
+        });
+        td.onchange = () => renderTopicos(td.value);
+        if(td.value) renderTopicos(td.value);
+    }
+
+    $("dSave").onclick = async () => {
+        const concurso_id = $("dConcurso").value;
+        const nome = $("dNome").value.trim();
+        if(!concurso_id || !nome){ alert("Preencha tudo."); return; }
+        try {
+            if(editingDisciplinaId){
+                await api("/api/admin/disciplinas/" + editingDisciplinaId, {
+                    method: "PUT", body: JSON.stringify({ nome }) });
+                editingDisciplinaId = null;
+            } else {
+                await api("/api/admin/disciplinas", {
+                    method: "POST", body: JSON.stringify({ concurso_id, nome }) });
+            }
+            $("dNome").value = "";
+            await loadDisciplinasForList(concurso_id);
+            await loadDisciplinasForTopicos($("tConcurso").value);
+        } catch(e){ alert(e.message); }
+    };
+    $("dClear").onclick = () => { $("dNome").value = ""; editingDisciplinaId = null; };
+
+    /* TÓPICOS */
+    async function renderTopicos(disciplinaId){
+        const tl = $("tList");
+        tl.innerHTML = "";
+        if(!disciplinaId) return;
+        const concId = $("tConcurso").value;
+        const c = await api("/api/admin/concursos/" + concId);
+        const disc = c.disciplinas.find(d => d.id === disciplinaId);
+        if(!disc) return;
+        disc.topicos.forEach(t => {
+            const div = document.createElement("div");
+            div.className = "list-item";
+            div.innerHTML = `<span class="name">${t.texto}</span>
+                <span class="actions">
+                    <button class="edit">Editar</button>
+                    <button class="del">Excluir</button>
+                </span>`;
+            div.querySelector(".edit").onclick = () => {
+                editingTopicoId = t.id;
+                $("tTexto").value = t.texto;
+            };
+            div.querySelector(".del").onclick = async () => {
+                if(!confirm(`Excluir este tópico?`)) return;
+                await api("/api/admin/topicos/" + t.id, { method: "DELETE" });
+                await renderTopicos(disciplinaId);
+            };
+            tl.appendChild(div);
+        });
+    }
+
+    $("tSave").onclick = async () => {
+        const disciplina_id = $("tDisciplina").value;
+        const texto = $("tTexto").value.trim();
+        if(!disciplina_id || !texto){ alert("Preencha tudo."); return; }
+        try {
+            if(editingTopicoId){
+                await api("/api/admin/topicos/" + editingTopicoId, {
+                    method: "PUT", body: JSON.stringify({ texto }) });
+                editingTopicoId = null;
+            } else {
+                await api("/api/admin/topicos", {
+                    method: "POST", body: JSON.stringify({ disciplina_id, texto }) });
+            }
+            $("tTexto").value = "";
+            await renderTopicos(disciplina_id);
+        } catch(e){ alert(e.message); }
+    };
+    $("tClear").onclick = () => { $("tTexto").value = ""; editingTopicoId = null; };
+
+    /* USUÁRIOS */
+    async function loadUsuarios(){
+        const us = await api("/api/admin/usuarios");
+        const list = $("uList");
+        list.innerHTML = "";
+        if(!us.length){
+            list.innerHTML = '<p class="muted">Nenhum usuário cadastrado ainda.</p>';
+            return;
+        }
+        us.forEach(u => {
+            const div = document.createElement("div");
+            div.className = "list-item";
+            div.style.flexDirection = "column";
+            div.style.alignItems = "stretch";
+
+            const header = document.createElement("div");
+            header.style.display = "flex";
+            header.style.justifyContent = "space-between";
+            header.style.alignItems = "center";
+            header.innerHTML = `<span class="name">${u.nome || "(sem nome)"} — ${u.email}</span>
+                <span class="actions">
+                    <button class="del">Excluir usuário</button>
+                </span>`;
+            header.querySelector(".del").onclick = async () => {
+                if(!confirm(`Excluir ${u.email}?`)) return;
+                await api("/api/admin/usuarios/" + u.id, { method: "DELETE" });
+                await loadUsuarios();
+            };
+            div.appendChild(header);
+
+            const permWrap = document.createElement("div");
+            permWrap.className = "perm-list";
+            concursosCache.forEach(c => {
+                const checked = u.concursos.some(uc => uc.id === c.id);
+                const item = document.createElement("label");
+                item.className = "perm-item";
+                item.innerHTML = `<input type="checkbox" value="${c.id}" ${checked ? "checked" : ""}> ${c.nome}`;
+                permWrap.appendChild(item);
+            });
+            div.appendChild(permWrap);
+
+            const saveBtn = document.createElement("button");
+            saveBtn.className = "btn success";
+            saveBtn.style.marginTop = ".5rem";
+            saveBtn.style.alignSelf = "flex-start";
+            saveBtn.textContent = "Salvar permissões";
+            saveBtn.onclick = async () => {
+                const marcados = Array.from(permWrap.querySelectorAll("input:checked")).map(i => i.value);
+                await api("/api/admin/usuarios/" + u.id + "/permissoes", {
+                    method: "POST", body: JSON.stringify({ concursos: marcados }) });
+                alert("Permissões salvas!");
+            };
+            div.appendChild(saveBtn);
+
+            list.appendChild(div);
+        });
+    }
+
+    // Carrega usuários ao clicar na aba
+    document.querySelector('.tab[data-tab="usuarios"]').addEventListener("click", loadUsuarios);
+})();
+</script>
+</body>
+</html>
