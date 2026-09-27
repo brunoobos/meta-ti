@@ -1,3 +1,5 @@
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const express = require("express");
 const Database = require("better-sqlite3");
 const cors = require("cors");
@@ -351,7 +353,12 @@ app.post("/api/admin/concursos", requireAdmin, (req, res) => {
     res.status(400).json({ error: "Concurso já existe ou id inválido." });
   }
 });
-
+app.post("/api/auth/registrar", (req, res) => {
+  ...
+  db.prepare("INSERT INTO usuarios (id, email, senha_hash, nome, status) VALUES (?, ?, ?, ?, 'pendente')")
+    .run(id, email.toLowerCase(), hash, nome || "");
+  ...
+});
 app.put("/api/admin/concursos/:id", requireAdmin, (req, res) => {
   const { nome, descricao } = req.body;
   db.prepare("UPDATE concursos SET nome = ?, descricao = ? WHERE id = ?")
