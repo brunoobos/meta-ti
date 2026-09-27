@@ -29,6 +29,7 @@
     .btn.primary { background: var(--accent); color: var(--bg); }
     .btn.success { background: var(--success); color: var(--bg); }
     .btn.danger { background: var(--danger); color: white; }
+    .btn.warning { background: var(--warning); color: var(--bg); }
     .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .tabs { display: flex; gap: .5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border);
         padding-bottom: .5rem; flex-wrap: wrap; }
@@ -42,13 +43,18 @@
         padding: .7rem 1rem; background: var(--surface); border: 1px solid var(--border);
         border-radius: 6px; margin-bottom: .5rem; gap: .5rem; }
     .list-item .name { flex: 1; font-weight: 500; }
-    .list-item .actions { display: flex; gap: .4rem; }
+    .list-item .actions { display: flex; gap: .4rem; flex-wrap: wrap; }
     .list-item .actions button { padding: .35rem .7rem; font-size: .75rem;
         border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
     .list-item .actions .edit { background: var(--accent); color: var(--bg); }
     .list-item .actions .del { background: var(--danger); color: white; }
     .badge { background: var(--accent); color: var(--bg); padding: .2rem .6rem;
         border-radius: 4px; font-size: .7rem; font-weight: 700; }
+    .status-badge { padding: .25rem .7rem; border-radius: 50px; font-size: .72rem;
+        font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .status-badge.pendente { background: #3d2e00; color: #f0c674; }
+    .status-badge.aprovado { background: #0d3a1f; color: #7ee787; }
+    .status-badge.bloqueado { background: #4d1a1a; color: #ff8080; }
     .login-box { max-width: 400px; margin: 6rem auto; background: var(--surface);
         padding: 2rem; border-radius: 12px; border: 1px solid var(--border); }
     .login-box h1 { margin-bottom: 1.5rem; }
@@ -60,11 +66,24 @@
     .perm-item input { width: auto; }
     .muted { color: var(--muted); font-size: .85rem; margin-top: .5rem; }
     .hidden { display: none; }
+    .user-card { background: var(--surface); border: 1px solid var(--border);
+        border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .user-card.pendente { border-left: 4px solid var(--warning); }
+    .user-card.aprovado { border-left: 4px solid var(--success); }
+    .user-card.bloqueado { border-left: 4px solid var(--danger); }
+    .user-header { display: flex; justify-content: space-between;
+        align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; }
+    .user-name { font-weight: 600; font-size: 1rem; }
+    .user-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .filter-bar { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filter-bar button { padding: .4rem .9rem; border-radius: 50px; border: 1px solid var(--border);
+        background: var(--surface); color: var(--muted); cursor: pointer;
+        font-size: .8rem; font-weight: 600; font-family: inherit; }
+    .filter-bar button.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="loginBox" class="login-box">
     <h1>Meta TI Admin</h1>
     <label>Senha de administrador</label>
@@ -74,7 +93,6 @@
     </div>
 </div>
 
-<!-- PAINEL -->
 <div id="panel" class="container hidden">
     <h1>Meta TI - Administrador</h1>
     <p class="subtitle">Gerencie concursos, disciplinas, tópicos e usuários.</p>
@@ -83,11 +101,10 @@
         <button class="tab active" data-tab="concursos">Concursos</button>
         <button class="tab" data-tab="disciplinas">Disciplinas</button>
         <button class="tab" data-tab="topicos">Tópicos</button>
-        <button class="tab" data-tab="usuarios">Usuários & Permissões</button>
+        <button class="tab" data-tab="usuarios">Usuários <span id="pendingCount" class="badge" style="display:none"></span></button>
         <button class="tab" id="btnLogout" style="margin-left:auto; color:#f85149">Sair</button>
     </div>
 
-    <!-- CONCURSOS -->
     <div class="section active" data-section="concursos">
         <h2>Adicionar / Editar concurso</h2>
         <label>ID (único, sem espaços)</label>
@@ -104,7 +121,6 @@
         <div id="cList"></div>
     </div>
 
-    <!-- DISCIPLINAS -->
     <div class="section" data-section="disciplinas">
         <h2>Adicionar / Editar disciplina</h2>
         <label>Concurso</label>
@@ -119,7 +135,6 @@
         <div id="dList"></div>
     </div>
 
-    <!-- TÓPICOS -->
     <div class="section" data-section="topicos">
         <h2>Adicionar / Editar tópico</h2>
         <label>Concurso</label>
@@ -136,10 +151,17 @@
         <div id="tList"></div>
     </div>
 
-    <!-- USUÁRIOS -->
     <div class="section" data-section="usuarios">
         <h2>Usuários cadastrados</h2>
-        <p class="muted">Marque quais concursos cada usuário pode ver. Clique em "Salvar permissões" após marcar.</p>
+        <p class="muted">Aprove, bloqueie ou libere concursos para cada usuário. Usuários com status <strong>pendente</strong> não conseguem fazer login até serem aprovados.</p>
+
+        <div class="filter-bar" id="userFilterBar">
+            <button class="active" data-ufilter="todos">Todos</button>
+            <button data-ufilter="pendente">Pendentes</button>
+            <button data-ufilter="aprovado">Aprovados</button>
+            <button data-ufilter="bloqueado">Bloqueados</button>
+        </div>
+
         <div id="uList"></div>
     </div>
 </div>
@@ -149,8 +171,10 @@
     const API = "";
     let ADMIN_PASS = sessionStorage.getItem("metati_admin_pass") || null;
     let concursosCache = [];
+    let usuariosCache = [];
     let editingDisciplinaId = null;
     let editingTopicoId = null;
+    let userFilter = "todos";
 
     const $ = id => document.getElementById(id);
 
@@ -165,7 +189,6 @@
         return res.json();
     }
 
-    /* LOGIN */
     async function tryLogin(){
         const pass = $("adminPass").value;
         try {
@@ -188,11 +211,11 @@
         $("panel").classList.remove("hidden");
         loadConcursos();
         populateSelects();
+        refreshPendingBadge();
     }
 
     if(ADMIN_PASS) showPanel();
 
-    /* TABS */
     document.querySelectorAll(".tab").forEach(tab => {
         tab.onclick = () => {
             if(tab.id === "btnLogout"){
@@ -205,6 +228,7 @@
             tab.classList.add("active");
             document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
             document.querySelector(`.section[data-section="${tab.dataset.tab}"]`).classList.add("active");
+            if(tab.dataset.tab === "usuarios") loadUsuarios();
         };
     });
 
@@ -265,7 +289,6 @@
 
     /* DISCIPLINAS */
     async function populateSelects(){
-        // dConcurso
         const dc = $("dConcurso");
         dc.innerHTML = "";
         concursosCache.forEach(c => {
@@ -274,7 +297,6 @@
             dc.appendChild(o);
         });
 
-        // tConcurso
         const tc = $("tConcurso");
         tc.innerHTML = "";
         concursosCache.forEach(c => {
@@ -283,17 +305,13 @@
             tc.appendChild(o);
         });
 
-        // tDisciplina (carrega do primeiro concurso)
         if(concursosCache.length){
             await loadDisciplinasForTopicos(concursosCache[0].id);
+            await loadDisciplinasForList(concursosCache[0].id);
         }
 
         dc.onchange = () => loadDisciplinasForList(dc.value);
         tc.onchange = () => loadDisciplinasForTopicos(tc.value);
-
-        if(concursosCache.length){
-            await loadDisciplinasForList(concursosCache[0].id);
-        }
     }
 
     async function loadDisciplinasForList(concursoId){
@@ -406,34 +424,85 @@
     $("tClear").onclick = () => { $("tTexto").value = ""; editingTopicoId = null; };
 
     /* USUÁRIOS */
+    async function refreshPendingBadge(){
+        try {
+            usuariosCache = await api("/api/admin/usuarios");
+            const pend = usuariosCache.filter(u => u.status === "pendente").length;
+            const badge = $("pendingCount");
+            if(pend > 0){
+                badge.textContent = pend;
+                badge.style.display = "inline-block";
+                badge.style.background = "#d29922";
+                badge.style.color = "#0d1117";
+            } else {
+                badge.style.display = "none";
+            }
+        } catch(e){ /* silencioso */ }
+    }
+
     async function loadUsuarios(){
-        const us = await api("/api/admin/usuarios");
+        usuariosCache = await api("/api/admin/usuarios");
+        renderUsuarios();
+        refreshPendingBadge();
+    }
+
+    function renderUsuarios(){
         const list = $("uList");
         list.innerHTML = "";
-        if(!us.length){
-            list.innerHTML = '<p class="muted">Nenhum usuário cadastrado ainda.</p>';
+        const filtrados = userFilter === "todos"
+            ? usuariosCache
+            : usuariosCache.filter(u => u.status === userFilter);
+
+        if(!filtrados.length){
+            list.innerHTML = '<p class="muted">Nenhum usuário nesta categoria.</p>';
             return;
         }
-        us.forEach(u => {
-            const div = document.createElement("div");
-            div.className = "list-item";
-            div.style.flexDirection = "column";
-            div.style.alignItems = "stretch";
+
+        filtrados.forEach(u => {
+            const card = document.createElement("div");
+            card.className = "user-card " + u.status;
 
             const header = document.createElement("div");
-            header.style.display = "flex";
-            header.style.justifyContent = "space-between";
-            header.style.alignItems = "center";
-            header.innerHTML = `<span class="name">${u.nome || "(sem nome)"} — ${u.email}</span>
-                <span class="actions">
-                    <button class="del">Excluir usuário</button>
-                </span>`;
-            header.querySelector(".del").onclick = async () => {
-                if(!confirm(`Excluir ${u.email}?`)) return;
-                await api("/api/admin/usuarios/" + u.id, { method: "DELETE" });
-                await loadUsuarios();
-            };
-            div.appendChild(header);
+            header.className = "user-header";
+            header.innerHTML = `
+                <div>
+                    <div class="user-name">${u.nome || "(sem nome)"}</div>
+                    <div class="muted">${u.email}</div>
+                    <div style="margin-top:.4rem">
+                        <span class="status-badge ${u.status}">${u.status}</span>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    ${u.status === "pendente" ? '<button class="btn success" data-action="aprovar">✓ Aprovar</button>' : ''}
+                    ${u.status === "aprovado" ? '<button class="btn warning" data-action="bloquear">⊘ Bloquear</button>' : ''}
+                    ${u.status === "bloqueado" ? '<button class="btn success" data-action="reativar">↻ Reativar</button>' : ''}
+                    <button class="btn danger" data-action="excluir">🗑 Excluir</button>
+                </div>
+            `;
+            card.appendChild(header);
+
+            header.querySelectorAll("[data-action]").forEach(btn => {
+                btn.onclick = async () => {
+                    const action = btn.dataset.action;
+                    try {
+                        if(action === "aprovar"){
+                            await api("/api/admin/usuarios/" + u.id + "/status", {
+                                method: "POST", body: JSON.stringify({ status: "aprovado" }) });
+                        } else if(action === "bloquear"){
+                            if(!confirm(`Bloquear ${u.email}?`)) return;
+                            await api("/api/admin/usuarios/" + u.id + "/status", {
+                                method: "POST", body: JSON.stringify({ status: "bloqueado" }) });
+                        } else if(action === "reativar"){
+                            await api("/api/admin/usuarios/" + u.id + "/status", {
+                                method: "POST", body: JSON.stringify({ status: "aprovado" }) });
+                        } else if(action === "excluir"){
+                            if(!confirm(`Excluir DEFINITIVAMENTE ${u.email}?`)) return;
+                            await api("/api/admin/usuarios/" + u.id, { method: "DELETE" });
+                        }
+                        await loadUsuarios();
+                    } catch(e){ alert(e.message); }
+                };
+            });
 
             const permWrap = document.createElement("div");
             permWrap.className = "perm-list";
@@ -444,27 +513,33 @@
                 item.innerHTML = `<input type="checkbox" value="${c.id}" ${checked ? "checked" : ""}> ${c.nome}`;
                 permWrap.appendChild(item);
             });
-            div.appendChild(permWrap);
+            card.appendChild(permWrap);
 
             const saveBtn = document.createElement("button");
-            saveBtn.className = "btn success";
-            saveBtn.style.marginTop = ".5rem";
-            saveBtn.style.alignSelf = "flex-start";
+            saveBtn.className = "btn primary";
+            saveBtn.style.marginTop = ".8rem";
             saveBtn.textContent = "Salvar permissões";
             saveBtn.onclick = async () => {
                 const marcados = Array.from(permWrap.querySelectorAll("input:checked")).map(i => i.value);
                 await api("/api/admin/usuarios/" + u.id + "/permissoes", {
                     method: "POST", body: JSON.stringify({ concursos: marcados }) });
                 alert("Permissões salvas!");
+                await loadUsuarios();
             };
-            div.appendChild(saveBtn);
+            card.appendChild(saveBtn);
 
-            list.appendChild(div);
+            list.appendChild(card);
         });
     }
 
-    // Carrega usuários ao clicar na aba
-    document.querySelector('.tab[data-tab="usuarios"]').addEventListener("click", loadUsuarios);
+    document.querySelectorAll("#userFilterBar button").forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll("#userFilterBar button").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            userFilter = btn.dataset.ufilter;
+            renderUsuarios();
+        };
+    });
 })();
 </script>
 </body>
